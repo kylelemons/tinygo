@@ -1,0 +1,32 @@
+{
+  "goos": "linux",
+  "goarch": "arm",
+  "compiler": "clang",
+  "llvm-target": "arm-none-eabi",
+  "gc": "conservative",
+  "linker": "llc-8",
+  "cflags": [
+    "-O3",
+    "--target=arm-none-eabi",
+    "-mcpu=arm7tdmi",
+    "-mthumb",
+    "-Werror",
+    "-fshort-enums",
+    "-nostdlibinc",
+    "-Wno-macro-redefined",
+    "-fno-exceptions",
+    "-fno-unwind-tables",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-Qunused-arguments"
+  ],
+  "ldflags": [
+    "-mcpu=arm7tdmi"
+  ],
+  "build-tags": [
+    "gba",
+    "arm7tdmi",
+    "linux",
+    "arm"
+  ]
+}

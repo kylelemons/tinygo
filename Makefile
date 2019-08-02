@@ -64,6 +64,9 @@ gen-device-stm32:
 	./tools/gen-device-svd.py lib/cmsis-svd/data/STMicro/ src/device/stm32/ --source=https://github.com/posborne/cmsis-svd/tree/master/data/STMicro
 	go fmt ./src/device/stm32
 
+gen-device-gba:
+	./tools/gen-device-svd.py src/device/gba/ src/device/gba/
+	go fmt ./src/device/gba
 
 # Get LLVM sources.
 llvm-project/README.md:

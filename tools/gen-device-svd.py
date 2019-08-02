@@ -56,6 +56,7 @@ def readSVD(path, sourceURL):
 
     for periphEl in root.findall('./peripherals/peripheral'):
         name = getText(periphEl.find('name'))
+        print(name)
         descriptionTags = periphEl.findall('description')
         description = ''
         if descriptionTags:
@@ -70,6 +71,7 @@ def readSVD(path, sourceURL):
 
         interruptEls = periphEl.findall('interrupt')
         for interrupt in interruptEls:
+            print(interrupt)
             intrName = getText(interrupt.find('name'))
             intrIndex = int(getText(interrupt.find('value')))
             addInterrupt(interrupts, intrName, intrIndex, description)
