@@ -15,10 +15,8 @@ var (
 	green = color.RGBA{G: 255}
 )
 
-const FixTinydraw = 1
-
 const (
-	BarHeight = 10
+	BarHeight = 11
 	BarWidth  = 240
 
 	FontHeight  = 5
@@ -56,7 +54,7 @@ func main() {
 		tinydraw.FilledRectangle(
 			display,
 			1, int16(i)*BarHeight+1,
-			BarWidth-2-FixTinydraw, BarHeight-1-FixTinydraw,
+			BarWidth-2, BarHeight-1,
 			red,
 		)
 		tinyfont.WriteLine(
@@ -98,7 +96,7 @@ func main() {
 			tinydraw.FilledRectangle(
 				display,
 				1, int16(i)*BarHeight+1,
-				BarWidth-2-FixTinydraw, BarHeight-1-FixTinydraw,
+				BarWidth-2, BarHeight-1,
 				green,
 			)
 			tinyfont.WriteLine(

@@ -2,6 +2,8 @@ github.com/blakesmith/ar v0.0.0-20150311145944-8bd4349a67f2 h1:oMCHnXa6CCCafdPDb
 github.com/blakesmith/ar v0.0.0-20150311145944-8bd4349a67f2/go.mod h1:PkYb9DJNAwrSvRx5DYA+gUcOIgTGVMNkfSCbZM8cWpI=
 github.com/conejoninja/tinydraw v0.0.0-20190702151118-50c7fad63963 h1:JlMnbkeTN495EzDhrNRhpxcame7s/SJQkdxiBZID7mU=
 github.com/conejoninja/tinydraw v0.0.0-20190702151118-50c7fad63963/go.mod h1:NXVXs6Oj8Rclp8jLh9qahKe/QlgXVraCZ38hpkXjlVc=
+github.com/conejoninja/tinydraw v0.0.0-20190804051442-8fa56ed7d9db h1:BhAjHC3wblZKHqW5Mpr8rEIS+PuGdtU4+tCNddai9S4=
+github.com/conejoninja/tinydraw v0.0.0-20190804051442-8fa56ed7d9db/go.mod h1:NXVXs6Oj8Rclp8jLh9qahKe/QlgXVraCZ38hpkXjlVc=
 github.com/conejoninja/tinyfont v0.0.0-20190727195023-c6fa4e882988 h1:lVl5++HaPt0nJFO5+OO09jWwT6bVxLFTAwis3/zNCsM=
 github.com/conejoninja/tinyfont v0.0.0-20190727195023-c6fa4e882988/go.mod h1:Ee59XotuGqLsItAqq2lHT21B8mVZ2+aGvne2+zIuerg=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=

@@ -51,8 +51,6 @@ func test() ([]byte, color.RGBA) {
 	return []byte("Memory Tests: PASS"), green
 }
 
-const FixTinydraw = 1
-
 func main() {
 	display := machine.Display.Mode3 // machine.Display.Mode3
 	display.Configure()
@@ -60,7 +58,7 @@ func main() {
 	str, color := test()
 
 	const (
-		BarHeight = 10
+		BarHeight = 11
 		BarWidth  = 240
 
 		FontHeight  = 5
@@ -69,7 +67,7 @@ func main() {
 	)
 
 	// Write a message in black-on-color
-	tinydraw.FilledRectangle(display, 1, 1, BarWidth-2-FixTinydraw, BarHeight-1-FixTinydraw, color)
+	tinydraw.FilledRectangle(display, 1, 1, BarWidth-2, BarHeight-2, color)
 	tinyfont.WriteLine(display, &tinyfont.TomThumb, TextXOffset+1, TextYOffset, str, black)
 
 	for {
