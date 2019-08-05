@@ -33,6 +33,12 @@ func test() ([]byte, color.RGBA) {
 		{"IO.Int.Request", unsafe.Pointer(&machine.IO.Int.Request), 0x4000200},
 		{"IO.Int.Ack", unsafe.Pointer(&machine.IO.Int.Ack), 0x4000202},
 		{"IO.Int.Enable", unsafe.Pointer(&machine.IO.Int.Enable), 0x4000208},
+		{"Tile.Blocks4[S0][0]", unsafe.Pointer(&machine.Tile.Blocks4[machine.TILE_BLOCK_S0][0]), 0x06010000},
+		{"Tile.Blocks4[S1][0]", unsafe.Pointer(&machine.Tile.Blocks4[machine.TILE_BLOCK_S1][0]), 0x06014000},
+		{"Tile.Blocks8[S0][0]", unsafe.Pointer(&machine.Tile.Blocks8[machine.TILE_BLOCK_S0][0]), 0x06010000},
+		{"Tile.Blocks8[S1][0]", unsafe.Pointer(&machine.Tile.Blocks8[machine.TILE_BLOCK_S1][0]), 0x06014000},
+		{"Sprites.Sprite[0].Y", unsafe.Pointer(&machine.Sprites.Sprite[0].Y), 0x07000000},
+		{"Sprites.Sprite[127].Y", unsafe.Pointer(&machine.Sprites.Sprite[127].Y), 0x070003F8},
 	} {
 		if uintptr(assert.got) == assert.want {
 			continue
