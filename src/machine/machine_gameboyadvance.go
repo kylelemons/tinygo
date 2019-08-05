@@ -16,8 +16,6 @@ var (
 	// Display maps the display memory in various modes.
 	Display Displays
 
-	// ioram makes it easier to directly write to I/O RAM by offset.
-	ioram = (*[0x400]volatile.Register8)(unsafe.Pointer(uintptr(0x04000000)))
 )
 
 // IOMap is the memory mapping of the IO Registers.
