@@ -143,6 +143,9 @@ const (
 	DISPCNT_DISPLAY_BG2          = 1 << 10
 	DISPCNT_DISPLAY_BG3          = 1 << 11
 	DISPCNT_DISPLAY_OBJ          = 1 << 12
+
+	DISPCNT_MODE_MASK       = 0x7
+	DISPCNT_DISPLAY_BG_MASK = 0x3 << 8
 )
 
 // DISPSTAT Register Constants
@@ -167,7 +170,8 @@ func (DisplayMode3) Configure() {
 	// Write into the I/O registers, setting video display parameters.
 	//
 	// Use video mode 3 (in BG2, a 16bpp bitmap in VRAM)
-	IO.LCD.DISPCNT.Set(DISPCNT_MODE3 | DISPCNT_DISPLAY_BG2)
+	IO.LCD.DISPCNT.ClearBits(DISPCNT_MODE_MASK | DISPCNT_DISPLAY_BG_MASK | DISPCNT_FORCED_BLANK)
+	IO.LCD.DISPCNT.SetBits(DISPCNT_MODE3 | DISPCNT_DISPLAY_BG2)
 }
 
 func (DisplayMode3) Size() (x, y int16) {
