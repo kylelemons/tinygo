@@ -1,6 +1,8 @@
 GBA    := out.gba
 SRCS   := *.go
 
+TINYGO_FLAGS :=
+
 .PHONY : build clean
 
 build : $(GBA)
@@ -10,4 +12,4 @@ clean :
 
 $(GBA) : *.go
 	@go get . >/dev/null 2>&1 || true
-	@tinygo build --target=gameboy-advance -o $@ .
+	@tinygo build --target=gameboy-advance $(TINYGO_FLAGS) -o $@ .
