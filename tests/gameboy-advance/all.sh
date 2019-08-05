@@ -39,7 +39,10 @@ for DIR in *; do
     echo "Building ${DIR}..."
 
     # The / works around mingw's shell munging, which confuses docker.
-    docker run --rm -v "/$(realpath "$DIR")":/gba "$IMAGE" clean build || continue
+    docker run --rm \
+      -v "/$(realpath "$DIR")":/gba \
+      -v "/$(realpath ../../)":/tinygo \
+      "$IMAGE" clean build || continue
     
     for CART in "$DIR"/*.gba; do
       echo "Running ${CART}..."
