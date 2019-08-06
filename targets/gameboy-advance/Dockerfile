@@ -1,7 +1,7 @@
 # This dockerfile is intended to be built from the root of the tinygo source tree
 # using a command like the following:
 #
-#   docker build --rm -f targets/gameboy-advance/Dockerfile -t tinygo/tinygo_gba:latest .
+#   docker build --no-cache --rm -f targets/gameboy-advance/Dockerfile -t tinygo/tinygo_gba:latest .
 
 # Currently Debian "sid" has llvm-8 required by TinyGo
 FROM debian:sid AS tinygo-gba-base
@@ -10,7 +10,7 @@ FROM debian:sid AS tinygo-gba-base
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update
 RUN apt-get -y install wget bzip2 xz-utils libxml2 git gpg
-RUN apt-get -y install make gcc g++ clang-8 libclang-8-dev binutils-arm-none-eabi
+RUN apt-get -y install make gcc g++ clang-8 libclang-8-dev lld-8 binutils-arm-none-eabi
 
 # Install Go
 WORKDIR /go

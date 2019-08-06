@@ -41,7 +41,7 @@ for DIR in *; do
     # The / works around mingw's shell munging, which confuses docker.
     docker run --rm \
       -v "/$(realpath "$DIR")":/gba \
-      -v "/$(realpath ../../)":/tinygo \
+      -v "/$(realpath ../../src)":/tinygo/src \
       "$IMAGE" clean build || continue
     
     for CART in "$DIR"/*.gba; do
