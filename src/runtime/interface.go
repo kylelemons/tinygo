@@ -43,7 +43,26 @@ type interfaceMethodInfo struct {
 	funcptr   uintptr // bitcast from the actual function pointer
 }
 
-type typecodeID struct{}
+type typecodeID struct {
+	// Depending on the type kind of this typecodeID, this pointer is something
+	// different:
+	// * basic types: null
+	// * named type: the underlying type
+	// * interface: null
+	// * chan/pointer/slice: the element type
+	// * struct: GEP of structField array (to typecode field)
+	// * array/func/map: TODO
+	references *typecodeID
+}
+
+// structField is used by the compiler to pass information to the interface
+// lowering pass. It is not used in the final binary.
+type structField struct {
+	typecode *typecodeID // type of this struct field
+	name     *uint8      // pointer to char array
+	tag      *uint8      // pointer to char array, or nil
+	embedded bool
+}
 
 // Pseudo type used before interface lowering. By using a struct instead of a
 // function call, this is simpler to reason about during init interpretation
