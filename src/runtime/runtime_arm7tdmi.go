@@ -74,6 +74,8 @@ func preinit() {
 		dst = unsafe.Pointer(uintptr(dst) + 4)
 		src = unsafe.Pointer(uintptr(src) + 4)
 	}
+
+	ReenableInterrupts(1)
 }
 
 func ticks() timeUnit {

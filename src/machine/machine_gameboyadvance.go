@@ -4,127 +4,62 @@ package machine
 
 import (
 	"image/color"
-	"runtime"
 	"runtime/volatile"
 	"unsafe"
 )
 
-var (
-	// IO maps the I/O Peripherals.
-	IO = (*IORegs)(unsafe.Pointer(uintptr(0x04000000)))
-
-	// Display maps the display memory in various modes.
-	Display = &Displays{
-		Reg: (*volatile.Register16)(unsafe.Pointer(uintptr(0x04000000))),
-	}
-)
-
-// IOMap is the memory mapping of the IO Registers.
+// Memory-mapped I/O
 //
 // Full IO Map:
 //   https://www.akkit.org/info/gbatek.htm#gbaiomap
-type IORegs struct {
-	LCD    LCDRegs
-	Sound  SoundRegs
-	_      [0x100 - 0x0B0]byte // DMA
-	Timer  [4]Timer            // Timers
-	_      [0x10]byte          // Unused
-	_      [0x130 - 0x120]byte // Serial 1
-	Keypad Keypad
-	_      [0x200 - 0x134]byte // Serial 2
-	Int    InterruptRegs
+var (
+	// DisplayControl maps the display control memory.
+	DisplayControl = (*DisplayRegs)(unsafe.Pointer(uintptr(0x04000000)))
+
+	// Interrupts maps the interrupt control registers.
+	Interrupts = (*InterruptRegs)(unsafe.Pointer(uintptr(0x04000200)))
+
+	// InterruptBIOS maps the BIOS interrupt control registers.
+	InterruptBIOS = (*InterruptBIOSRegs)(unsafe.Pointer(uintptr(0x03007FF8)))
+
+	// Keypad maps the keypad control and status registers.
+	Keypad = (*KeypadRegs)(unsafe.Pointer(uintptr(0x04000130)))
+
+	// The Timer array maps the four timer control registers.
+	Timer = (*[4]TimerRegs)(unsafe.Pointer(uintptr(0x04000100)))
+)
+
+// Displays:
+
+// Display is a convenience alias for Mode3Framebuffer.
+var Display Mode3Framebuffer
+
+var mode3Framebuffer = (*[160][240]volatile.Register16)(unsafe.Pointer(uintptr(0x06000000)))
+
+// Mode3Framebuffer is a convenience wrapper for setting pixels in the 240x160 16bpp bitmap mode.
+type Mode3Framebuffer struct{}
+
+func (Mode3Framebuffer) Configure() {
+	DisplayControl.DISPCNT.Set(DISPCNT_MODE3 | DISPCNT_DISPLAY_BG2)
 }
 
-type LCDRegs struct {
+func (Mode3Framebuffer) Size() (w, h int16) {
+	return 240, 160
+}
+
+func (Mode3Framebuffer) SetPixel(x, y int16, c color.RGBA) {
+	mode3Framebuffer[y][x].Set(uint16(c.R)&0x1f | uint16(c.G)&0x1f<<5 | uint16(c.B)&0x1f<<10)
+}
+
+func (Mode3Framebuffer) Display() error {
+	return nil
+}
+
+type DisplayRegs struct {
 	DISPCNT  volatile.Register16 // R/W - LCD Control
 	_        volatile.Register16 // R/W - Undocumented - Green Swap
 	DISPSTAT volatile.Register16 // R/W - General LCD Status (STAT,LYC)
 	VCOUNT   volatile.Register16 // R   - Vertical Counter (LY)
-	BG0CNT   volatile.Register16 // R/W - BG0 Control
-	BG1CNT   volatile.Register16 // R/W - BG1 Control
-	BG2CNT   volatile.Register16 // R/W - BG2 Control
-	BG3CNT   volatile.Register16 // R/W - BG3 Control
-	BG0HOFS  volatile.Register16 // W   - BG0 X-Offset
-	BG0VOFS  volatile.Register16 // W   - BG0 Y-Offset
-	BG1HOFS  volatile.Register16 // W   - BG1 X-Offset
-	BG1VOFS  volatile.Register16 // W   - BG1 Y-Offset
-	BG2HOFS  volatile.Register16 // W   - BG2 X-Offset
-	BG2VOFS  volatile.Register16 // W   - BG2 Y-Offset
-	BG3HOFS  volatile.Register16 // W   - BG3 X-Offset
-	BG3VOFS  volatile.Register16 // W   - BG3 Y-Offset
-	BG2PA    volatile.Register16 // W   - BG2 Rotation/Scaling Parameter A (dx)
-	BG2PB    volatile.Register16 // W   - BG2 Rotation/Scaling Parameter B (dmx)
-	BG2PC    volatile.Register16 // W   - BG2 Rotation/Scaling Parameter C (dy)
-	BG2PD    volatile.Register16 // W   - BG2 Rotation/Scaling Parameter D (dmy)
-	BG2X     volatile.Register32 // W   - BG2 Reference Point X-Coordinate
-	BG2Y     volatile.Register32 // W   - BG2 Reference Point Y-Coordinate
-	BG3PA    volatile.Register16 // W   - BG3 Rotation/Scaling Parameter A (dx)
-	BG3PB    volatile.Register16 // W   - BG3 Rotation/Scaling Parameter B (dmx)
-	BG3PC    volatile.Register16 // W   - BG3 Rotation/Scaling Parameter C (dy)
-	BG3PD    volatile.Register16 // W   - BG3 Rotation/Scaling Parameter D (dmy)
-	BG3X     volatile.Register32 // W   - BG3 Reference Point X-Coordinate
-	BG3Y     volatile.Register32 // W   - BG3 Reference Point Y-Coordinate
-	WIN0H    volatile.Register16 // W   - Window 0 Horizontal Dimensions
-	WIN1H    volatile.Register16 // W   - Window 1 Horizontal Dimensions
-	WIN0V    volatile.Register16 // W   - Window 0 Vertical Dimensions
-	WIN1V    volatile.Register16 // W   - Window 1 Vertical Dimensions
-	WININ    volatile.Register16 // R/W - Inside of Window 0 and 1
-	WINOUT   volatile.Register16 // R/W - Inside of OBJ Window & Outside of Windows
-	MOSAIC   volatile.Register16 // W   - Mosaic Size
-	_        volatile.Register16 // -   - Not used
-	BLDCNT   volatile.Register16 // R/W - Color Special Effects Selection
-	BLDALPHA volatile.Register16 // W   - Alpha Blending Coefficients
-	BLDY     volatile.Register16 // W   - Brightness (Fade-In/Out) Coefficient
-	_        volatile.Register32 // -   - Not used
-	_        volatile.Register32 // -   - Not used
-}
-
-type SoundRegs struct {
-	SOUND1CNT_L volatile.Register16    // R/W - Channel 1 Sweep register       (NR10)
-	SOUND1CNT_H volatile.Register16    // R/W - Channel 1 Duty/Length/Envelope (NR11, NR12)
-	SOUND1CNT_X volatile.Register16    // R/W - Channel 1 Frequency/Control    (NR13, NR14)
-	_           volatile.Register16    // -   - Not used
-	SOUND2CNT_L volatile.Register16    // R/W - Channel 2 Duty/Length/Envelope (NR21, NR22)
-	_           volatile.Register16    // -   - Not used
-	SOUND2CNT_H volatile.Register16    // R/W - Channel 2 Frequency/Control    (NR23, NR24)
-	_           volatile.Register16    // -   - Not used
-	SOUND3CNT_L volatile.Register16    // R/W - Channel 3 Stop/Wave RAM select (NR30)
-	SOUND3CNT_H volatile.Register16    // R/W - Channel 3 Length/Volume        (NR31, NR32)
-	SOUND3CNT_X volatile.Register16    // R/W - Channel 3 Frequency/Control    (NR33, NR34)
-	_           volatile.Register16    // -   - Not used
-	SOUND4CNT_L volatile.Register16    // R/W - Channel 4 Length/Envelope      (NR41, NR42)
-	_           volatile.Register16    // -   - Not used
-	SOUND4CNT_H volatile.Register16    // R/W - Channel 4 Frequency/Control    (NR43, NR44)
-	_           volatile.Register16    // -   - Not used
-	SOUNDCNT_L  volatile.Register16    // R/W - Control Stereo/Volume/Enable   (NR50, NR51)
-	SOUNDCNT_H  volatile.Register16    // R/W - Control Mixing/DMA Control
-	SOUNDCNT_X  volatile.Register16    // R/W - Control Sound on/off           (NR52)
-	_           volatile.Register16    // -   - Not used
-	SOUNDBIAS   volatile.Register16    // BIAS- Sound PWM Control
-	_           [3]volatile.Register16 // -   - Not used
-	WAVE_RAM    [2][8]byte             // R/W - Channel 3 Wave Pattern RAM (2 banks!!)
-	FIFO_A      volatile.Register32    // W   - Channel A FIFO, Data 0-3
-	FIFO_B      volatile.Register32    // W   - Channel B FIFO, Data 0-3
-	_           [4]volatile.Register16 // Not used
-}
-
-type InterruptRegs struct {
-	Request volatile.Register16 // R/W - Interrupt Request
-	Ack     volatile.Register16 // R/W - Interrupt Active (R) / Acknowledge (W)
-	_       volatile.Register32 // -   - Not used
-	Enable  volatile.Register16 // R/W - Interrupt Master Enable
-}
-
-type PinMode uint8
-
-// Set has not been implemented.
-func (p Pin) Set(value bool) {
-	// do nothing
-}
-
-// Displays is a convenience container for the various mode-based displays.
-type Displays struct {
-	Reg *volatile.Register16
 }
 
 // DISPCNT Register Constants
@@ -149,77 +84,6 @@ const (
 	DISPCNT_BG_MASK   = 0xf << 8
 )
 
-type DisplayOption struct{ Mask, Set uint16 }
-
-var (
-	// Display modes (mutually exclusive)
-	Mode3 = DisplayOption{
-		// BG2 must be enabled in bitmapped modes, so set both at once.
-		Mask: DISPCNT_MODE_MASK | DISPCNT_BG_MASK,
-		Set:  DISPCNT_MODE3 | DISPCNT_DISPLAY_BG2,
-	}
-
-	// Enabled backgrounds (can be combined in one call to Configure)
-	EnableBackground0 = DisplayOption{Mask: DISPCNT_BG_MASK, Set: DISPCNT_DISPLAY_BG0}
-	EnableBackground1 = DisplayOption{Mask: DISPCNT_BG_MASK, Set: DISPCNT_DISPLAY_BG1}
-	EnableBackground2 = DisplayOption{Mask: DISPCNT_BG_MASK, Set: DISPCNT_DISPLAY_BG2}
-	EnableBackground3 = DisplayOption{Mask: DISPCNT_BG_MASK, Set: DISPCNT_DISPLAY_BG3}
-
-	// Display blanking (blanked at reset, mutually exclusive)
-	Blank   = DisplayOption{Set: DISPCNT_FORCED_BLANK}
-	Unblank = DisplayOption{Mask: DISPCNT_FORCED_BLANK}
-
-	// DisplayDefaults is useful for starter programs, but not much else.
-	DisplayDefaults = []DisplayOption{
-		Mode3,   // Enable 8bpp 160x240, single-frame bitmap mode
-		Unblank, // Start showing the display
-	}
-)
-
-// Configure configures the display with the given options.
-//
-// If no options are given, DisplayDefaults is used.
-func (d *Displays) Configure(opts ...DisplayOption) {
-	if len(opts) == 0 {
-		opts = DisplayDefaults
-	}
-
-	var mask, set uint16
-	for _, opt := range opts {
-		mask |= opt.Mask
-		set |= opt.Set
-	}
-
-	d.Reg.Set(d.Reg.Get()&^mask | set)
-}
-
-func (d *Displays) check(opt DisplayOption) bool {
-	return d.Reg.Get()&opt.Mask == opt.Set
-}
-
-func (d *Displays) Size() (x, y int16) {
-	switch {
-	case d.check(Mode3):
-		return 240, 160
-	default:
-		return -1, -1
-	}
-}
-
-var mode3Framebuffer = (*[160][240]volatile.Register16)(unsafe.Pointer(uintptr(0x06000000)))
-
-func (d *Displays) SetPixel(x, y int16, c color.RGBA) {
-	switch {
-	case d.check(Mode3):
-		mode3Framebuffer[y][x].Set(uint16(c.R)&0x1f | uint16(c.G)&0x1f<<5 | uint16(c.B)&0x1f<<10)
-	}
-}
-
-func (d *Displays) Display() error {
-	d.Configure(Unblank)
-	return nil
-}
-
 // DISPSTAT Register Constants
 const (
 	DISPSTAT_VBLANK       = 1 << iota // V-Blank flag   (Read only) (1=VBlank) (set in line 160..226; not 227)
@@ -230,17 +94,48 @@ const (
 	DISPSTAT_VCOUNTER_IRQ             // V-Counter IRQ Enable       (1=Enable)
 )
 
-type Keypad struct {
+// Interrupts:
+
+type InterruptRegs struct {
+	Request volatile.Register16 // R/W - Interrupt Request
+	Ack     volatile.Register16 // R/W - Interrupt Active (R) / Acknowledge (W)
+	_       volatile.Register32 // -   - Not used
+	Enable  volatile.Register16 // R/W - Interrupt Master Enable
+}
+
+type InterruptBIOSRegs struct {
+	Ack volatile.Register16 // R/W - BIOS Interrupt acknoweldgements
+}
+
+// Interrupt constants
+const (
+	INT_VBLANK   = iota // LCD V-Blank
+	INT_HBLANK          // LCD H-Blank
+	INT_VCOUNTER        // LCD V-Counter Match
+	INT_TIMER0          // Timer 0 Overflow
+	INT_TIMER1          // Timer 1 Overflow
+	INT_TIMER2          // Timer 2 Overflow
+	INT_TIMER3          // Timer 3 Overflow
+	INT_SERIAL          // Serial Communication
+	INT_DMA0            // DMA 0
+	INT_DMA1            // DMA 1
+	INT_DMA2            // DMA 2
+	INT_DMA3            // DMA 3
+	INT_KEYPAD          // Keypad
+	INT_GAMEPAK         // Game Pak (external IRQ source)
+	InterruptCount
+)
+
+// Keypad:
+
+type KeypadRegs struct {
 	Status  volatile.Register16 // R   - Key Status
 	Control volatile.Register16 // R/W - Key Interrupt Control
 }
 
-// A Key represents one of the possible keys.
-type Key uint16
-
 // Keypad constants
 const (
-	KEY_A Key = 1 << iota
+	KEY_A = 1 << iota
 	KEY_B
 	KEY_SELECT
 	KEY_START
@@ -252,22 +147,15 @@ const (
 	KEY_LB
 
 	// KEY_ANY has the bits for every key set.
-	KEY_ANY Key = 0x3FF
+	KEY_ANY = 0x3FF
 
 	KEY_IRQ_ENABLE = 1 << 14
 	KEY_IRQ_ALL    = 1 << 15
 )
 
-func (k *Keypad) WakeOn(keys ...Key) {
-	var mask uint16
-	for _, k := range keys {
-		mask |= uint16(k)
-	}
-	k.Control.ClearBits(uint16(KEY_ANY))
-	k.Control.SetBits(mask)
-}
+// Timers:
 
-type Timer struct {
+type TimerRegs struct {
 	Counter volatile.Register16 // R/W - Counter (R) / Reload (W)
 	Control volatile.Register16 // R/W - Flags (see TIMER_*)
 }
@@ -282,113 +170,3 @@ const (
 	TIMER_IRQ_ENABLE      = 1 << 6
 	TIMER_START           = 1 << 7
 )
-
-func (t *Timer) Start() {
-	t.Control.SetBits(TIMER_START)
-}
-func (t *Timer) Stop() {
-	t.Control.ClearBits(TIMER_START)
-}
-
-type Interrupt int
-
-// Interrupt constants
-const (
-	INT_VBLANK   Interrupt = iota // LCD V-Blank
-	INT_HBLANK                    // LCD H-Blank
-	INT_VCOUNTER                  // LCD V-Counter Match
-	INT_TIMER0                    // Timer 0 Overflow
-	INT_TIMER1                    // Timer 1 Overflow
-	INT_TIMER2                    // Timer 2 Overflow
-	INT_TIMER3                    // Timer 3 Overflow
-	INT_SERIAL                    // Serial Communication
-	INT_DMA0                      // DMA 0
-	INT_DMA1                      // DMA 1
-	INT_DMA2                      // DMA 2
-	INT_DMA3                      // DMA 3
-	INT_KEYPAD                    // Keypad
-	INT_GAMEPAK                   // Game Pak (external IRQ source)
-	InterruptCount
-)
-
-type InterruptController struct {
-	handlers [InterruptCount]func(Interrupt)
-}
-
-// Interrupts is a static interrupt controller.
-var Interrupts InterruptController
-
-var interruptEnabler = [InterruptCount]struct {
-	Register *volatile.Register16
-	Bit      uint16
-}{
-	INT_VBLANK:   {&IO.LCD.DISPSTAT, DISPSTAT_VBLANK_IRQ},
-	INT_HBLANK:   {&IO.LCD.DISPSTAT, DISPSTAT_HBLANK_IRQ},
-	INT_VCOUNTER: {&IO.LCD.DISPSTAT, DISPSTAT_VCOUNTER_IRQ},
-	INT_TIMER0:   {&IO.Timer[0].Control, TIMER_IRQ_ENABLE},
-	INT_TIMER1:   {&IO.Timer[1].Control, TIMER_IRQ_ENABLE},
-	INT_TIMER2:   {&IO.Timer[2].Control, TIMER_IRQ_ENABLE},
-	INT_TIMER3:   {&IO.Timer[3].Control, TIMER_IRQ_ENABLE},
-	INT_SERIAL:   {}, // TODO
-	INT_DMA0:     {}, // TODO
-	INT_DMA1:     {}, // TODO
-	INT_DMA2:     {}, // TODO
-	INT_DMA3:     {}, // TODO
-	INT_KEYPAD:   {&IO.Keypad.Control, KEY_IRQ_ENABLE},
-	INT_GAMEPAK:  {}, // TODO
-}
-
-func (ic *InterruptController) Enable(f func(Interrupt), ints ...Interrupt) {
-	IO.Int.Enable.Set(0)
-
-	for _, intr := range ints {
-		enabler := interruptEnabler[int(intr)]
-		if enabler.Register != nil {
-			enabler.Register.SetBits(enabler.Bit)
-		}
-
-		IO.Int.Request.SetBits(1 << uint16(intr))
-		ic.handlers[intr] = f
-	}
-
-	IO.Int.Enable.Set(1)
-}
-
-func (ic *InterruptController) Disable(ints ...Interrupt) {
-	ime := IO.Int.Enable.Get()
-	IO.Int.Enable.Set(0)
-	defer IO.Int.Enable.Set(ime)
-
-	for _, intr := range ints {
-		enabler := interruptEnabler[int(intr)]
-		if enabler.Register != nil {
-			enabler.Register.ClearBits(enabler.Bit)
-		}
-
-		IO.Int.Request.ClearBits(1 << uint16(intr))
-		ic.handlers[intr] = nil
-	}
-}
-
-func (ic *InterruptController) DisableAll() {
-	IO.Int.Enable.Set(0)
-	ic.handlers = [InterruptCount]func(Interrupt){}
-}
-
-func (ic *InterruptController) handle(caught uint16) {
-	for i := Interrupt(0); i < InterruptCount; i++ {
-		if caught&(1<<uint16(i)) != 0 && ic.handlers[i] != nil {
-			ic.handlers[i](i)
-		}
-	}
-}
-
-func init() {
-	runtime.UserISR = isr
-}
-
-func isr() {
-	caught := IO.Int.Ack.Get()
-	IO.Int.Ack.SetBits(caught) // ack all interrupts
-	Interrupts.handle(caught)
-}

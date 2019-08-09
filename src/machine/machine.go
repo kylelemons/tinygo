@@ -1,3 +1,5 @@
+// +build !gameboyadvance
+
 package machine
 
 type PinConfig struct {
